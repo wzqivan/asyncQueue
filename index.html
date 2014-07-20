@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js"> <!--<![endif]-->
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title>Async Queue Implementation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="stylesheet" href="css/bootstrap.min.css">
+        <style>
+            body {
+                padding-top: 50px;
+                padding-bottom: 20px;
+            }
+        </style>
+        <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+        <link rel="stylesheet" href="css/main.css">
+
+    </head>
+    <body>
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Async Queue Implementation</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <!-- <form class="navbar-form navbar-right" role="form">
+            <div class="form-group">
+              <input type="text" placeholder="Email" class="form-control">
+            </div>
+            <div class="form-group">
+              <input type="password" placeholder="Password" class="form-control">
+            </div>
+            <button type="submit" class="btn btn-success">Sign in</button>
+          </form> -->
+        </div><!--/.navbar-collapse -->
+      </div>
+    </div>
+
+    <!-- Main jumbotron for a primary marketing message or call to action -->
+    <div class="jumbotron">
+      <div class="container">
+        <h1>Hello, world!</h1>
+        <p>This is a simple async queue implementation for Google Analytics.</p>
+        <p>Click the <strong>Start</strong> button to go</p>
+        <p><button id="btnQueueImplement" class="btn btn-primary btn-lg">Start &raquo;</button></p>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Example row of columns -->
+      <div id="outputResult" class="row">
+      	  <!-- <h1>Sent</h1> -->
+      </div>
+      
+      <hr>
+
+      <footer>
+        <p>&copy; Company 2014</p>
+      </footer>
+     </div> <!-- /container -->        
+
+        <script>
+           
+           var messages = ['data1','data2','data3'],
+	            config = { isDebug : false },
+	            analyticsMode = config.isDebug ? 'u/ga_debug.js' : 'ga.js';  // Determines whether we load the real analytics or debug analytics?
+	            resultSent = [],  // Array for store the result of successful sent 
+	            resultError = [],  // Array for store the result of send error
+	            btnStart = document.getElementById("btnQueueImplement");
+	            
+	            // Attached click event to load analytics script manully
+	            btnStart.onclick = function(){
+	            	btnStart.innerHTML = "Sending...";
+	            	loadGA.call(this, analyticsMode);
+	            };
+            
+            
+            /**
+	         * callback function to implement the queue after ga.js loaded  
+	         * generate the command for the _gaq push function
+	         * messages replaced with an object which contain sent and error array. 
+	         */
+	        var implementQueue = function(){
+	        	
+	        	//generate the command for  _gaq push function
+			    for(var i = 0 ; i < messages.length; i++){
+			    	var _msg = ["_setCustomVar", i+1, messages[i], messages[i]];
+			    	(_gaq.push(_msg)) ? resultError.push(messages[i]) : resultSent.push(messages[i]); 
+			    }
+			    
+			    //messages replaced with an object which contains a sent array and an error array. 
+			    messages = {
+			    	sent: resultSent,
+			    	error: resultError
+			    };
+			    
+			    btnStart.disabled = true;
+			    btnStart.innerHTML = "Done";
+			    
+			    //html partial with result
+			    output(messages);
+		    };
+		    
+		    
+		    /**
+	         * Determines output html partial when there are some value in result array
+	         *
+	         * @param resultObj - messages replaced with an object when the google script eventually loads. 
+	         * @return html partial with result and appended to the div with id "outputResult"
+	         */
+		    var output = function(resultObj){
+                
+                // loop the result object to generate the html partial
+                Object.keys(resultObj).forEach(function(key) {
+				    
+				    if(resultObj[key].length){
+				    	
+				    	if ((key == 'sent') || (key == 'error')){
+				    		
+		                	var arrayDiv = [];
+						    for(var i=0; i < resultObj[key].length; i++){
+						        var h3 = document.createElement('h3'),
+						            p = document.createElement('p');
+						            h3.innerHTML = resultObj[key][i];
+						            
+						            if(key === 'sent'){
+							            p.innerHTML = resultObj[key][i] + ' has been sent successfully';
+						            }
+						            
+						            if(key === 'error'){
+							            p.innerHTML = resultObj[key][i] + ' failed to be sent';
+						            }
+						            
+						        arrayDiv[i] = document.createElement('div');
+						        arrayDiv[i].id = 'block-' + i;
+						        arrayDiv[i].className = 'col-md-4';
+						        arrayDiv[i].appendChild(h3);
+						        arrayDiv[i].appendChild(p);
+						    }
+						    
+						    // loop the html partial array for append to the div with id "outputResult"
+						    for(var i=0; i < arrayDiv.length; i++){
+						        document.getElementById("outputResult").appendChild(arrayDiv[i]);
+						    }
+						    
+					    }
+	                }
+	                
+				});
+                
+		    };
+			  
+			// initial google analytics queue for global variable _gaq 
+			var _gaq = _gaq || [];
+				_gaq.push(['_setAccount', 'UA-28486145-1']); // real acount id
+				_gaq.push(['_setDomainName', 'none']);  // for local testing
+				_gaq.push(['_trackPageview']);
+	            _gaq.push(implementQueue); // set custom variables with the value of messages variable
+			
+			
+			/**
+	         * load google analytics script with real analytics or debug analytics
+	         *
+	         * @param analyticsMode - switch the partial to generate the src for debug ga script or normal ga script 
+	         * @return html partial with ga script for load
+	         */		  
+			var loadGA = function(analyticsMode){
+			  	var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/' + analyticsMode;
+			    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+			};
+			
+        </script>
+    </body>
+</html>
